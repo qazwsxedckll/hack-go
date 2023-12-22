@@ -51,11 +51,12 @@ func NewParser(r io.Reader) (*Parser, error) {
 
 	return &Parser{
 		commands: commands,
+		current:  -1,
 	}, nil
 }
 
 func (p *Parser) HasMoreCommands() bool {
-	return p.current < len(p.commands)
+	return p.current+1 < len(p.commands)
 }
 
 func (p *Parser) Advance() {
