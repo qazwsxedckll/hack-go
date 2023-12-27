@@ -26,6 +26,30 @@ func TestNewParser(t *testing.T) {
 			},
 		},
 		{
+			name: "MaxL.asm",
+			file: "testdata/Max/MaxL.asm",
+			want: []string{
+				`@0`,
+				`D=M`,
+				`@1`,
+				`D=D-M`,
+				`@12`,
+				`D;JGT`,
+				`@1`,
+				`D=M`,
+				`@2`,
+				`M=D`,
+				`@16`,
+				`0;JMP`,
+				`@0`,
+				`D=M`,
+				`@2`,
+				`M=D`,
+				`@16`,
+				`0;JMP`,
+			},
+		},
+		{
 			name: "Max.asm",
 			file: "testdata/Max/Max.asm",
 			want: []string{
@@ -33,20 +57,21 @@ func TestNewParser(t *testing.T) {
 				`D=M`,
 				`@R1`,
 				`D=D-M`,
-				`@OUTPUT_FIRST`,
+				`@ITSR0`,
 				`D;JGT`,
 				`@R1`,
 				`D=M`,
-				`@OUTPUT_D`,
-				`0;JMP`,
-				`(OUTPUT_FIRST)`,
-				`@R0`,
-				`D=M`,
-				`(OUTPUT_D)`,
 				`@R2`,
 				`M=D`,
-				`(INFINITE_LOOP)`,
-				`@INFINITE_LOOP`,
+				`@END`,
+				`0;JMP`,
+				`(ITSR0)`,
+				`@R0`,
+				`D=M`,
+				`@R2`,
+				`M=D`,
+				`(END)`,
+				`@END`,
 				`0;JMP`,
 			},
 		},
@@ -64,22 +89,3 @@ func TestNewParser(t *testing.T) {
 		})
 	}
 }
-
-// func TestCommandType(t *testing.T) {
-// 	file, err := os.Open("testdata/Add.asm")
-// 	require.NoError(t, err)
-
-// 	p := NewParser(file)
-
-// 	p.Advance()
-// 	require.Equal(t, ACommand, p.CommandType())
-
-// 	p.Advance()
-// 	require.Equal(t, CCommand, p.CommandType())
-
-// 	p.Advance()
-// 	require.Equal(t, LCommand, p.CommandType())
-
-// 	p.Advance()
-// 	require.Equal(t, CCommand, p.CommandType())
-// }

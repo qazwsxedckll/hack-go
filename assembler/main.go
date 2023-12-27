@@ -33,26 +33,53 @@ func main() {
 	}
 }
 
-func parse(in io.Reader, out io.Writer) error {
+func parse(in io.ReadSeeker, out io.Writer) error {
+	symbolTable := NewSymbolTable()
+
 	parser, err := NewParser(in)
 	if err != nil {
 		return err
 	}
 
+	rom := 0
 	for parser.HasMoreCommands() {
 		parser.Advance()
 
 		switch parser.CommandType() {
+		case ACommand, CCommand:
+			rom++
+		case LCommand:
+			symbolTable.AddEntry(parser.Symbol(), rom)
+		}
+	}
+
+	_, err = in.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
+	}
+	parser, err = NewParser(in)
+	if err != nil {
+		return err
+	}
+
+	ram := 16
+	for parser.HasMoreCommands() {
+		parser.Advance()
+
+		switch symbol := parser.Symbol(); parser.CommandType() {
 		case ACommand:
-			i, err := strconv.Atoi(parser.Symbol())
+			i, err := strconv.Atoi(symbol)
 			if err != nil {
-				return fmt.Errorf("error converting symbol to int: %v", err)
+				if !symbolTable.Contains(symbol) {
+					symbolTable.AddEntry(symbol, ram)
+					ram++
+				}
+				i = symbolTable.GetAddress(symbol)
 			}
 			fmt.Fprintf(out, "0%015b\n", i)
 		case CCommand:
 			fmt.Fprintf(out, "111%s%s%s\n", Comp(parser.Comp()), Dest(parser.Dest()), Jump(parser.Jump()))
 		}
 	}
-
 	return nil
 }
