@@ -2,11 +2,36 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"strconv"
 	"strings"
 )
 
-type CommandType string
+type (
+	CommandType       string
+	ArithmeticCommand string
+)
+
+var cmdMap = map[string]CommandType{
+	"add":      C_ARITHMETIC,
+	"sub":      C_ARITHMETIC,
+	"neg":      C_ARITHMETIC,
+	"eq":       C_ARITHMETIC,
+	"gt":       C_ARITHMETIC,
+	"lt":       C_ARITHMETIC,
+	"and":      C_ARITHMETIC,
+	"or":       C_ARITHMETIC,
+	"not":      C_ARITHMETIC,
+	"push":     C_PUSH,
+	"pop":      C_POP,
+	"label":    C_LABEL,
+	"goto":     C_GOTO,
+	"if-goto":  C_IF,
+	"function": C_FUNCTION,
+	"return":   C_RETURN,
+	"call":     C_CALL,
+}
 
 const (
 	C_ARITHMETIC CommandType = "C_ARITHMETIC"
@@ -65,17 +90,35 @@ func (p *Parser) Advance() {
 }
 
 func (p *Parser) CommandType() CommandType {
-	// if strings.HasPrefix(p.commands[p.current], "@") {
-	// 	return ACommand
-	// } else if strings.HasPrefix(p.commands[p.current], "(") {
-	// 	return LCommand
-	// } else {
-	// 	return CCommand
-	// }
+	cmd := strings.Fields(p.commands[p.current])[0]
+	if c, ok := cmdMap[cmd]; ok {
+		return c
+	}
+
+	panic(fmt.Sprintf("unknown command: %s", p.commands[p.current]))
 }
 
 func (p *Parser) Arg1() string {
+	if p.CommandType() == C_RETURN {
+		panic("no argument for return command")
+	}
+
+	if p.CommandType() == C_ARITHMETIC {
+		return p.commands[p.current]
+	}
+
+	return strings.Fields(p.commands[p.current])[1]
 }
 
 func (p *Parser) Arg2() int {
+	if p.CommandType() == C_PUSH || p.CommandType() == C_POP || p.CommandType() == C_FUNCTION || p.CommandType() == C_CALL {
+		i, err := strconv.Atoi(strings.Fields(p.commands[p.current])[2])
+		if err != nil {
+			panic(err)
+		}
+
+		return i
+	}
+
+	panic("no second argument for command")
 }
