@@ -27,7 +27,7 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
-				out, err := os.OpenFile(file.Name()[:len(file.Name())-3]+".asm", os.O_CREATE|os.O_WRONLY, 0o644)
+				out, err := os.Create(arg + "/" + file.Name()[:len(file.Name())-3] + ".asm")
 				if err != nil {
 					panic(err)
 				}

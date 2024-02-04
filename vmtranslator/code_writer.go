@@ -28,13 +28,13 @@ func (c *CodeWriter) WriteArithmetic(command string) {
 	switch command {
 	case "add":
 		popBinary(&buffer)
-		buffer.WriteString(`M=M+D`)
+		buffer.WriteString("M=M+D\n")
 	case "sub":
 		popBinary(&buffer)
-		buffer.WriteString(`M=M-D`)
+		buffer.WriteString("M=M-D\n")
 	case "neg":
 		popBinary(&buffer)
-		buffer.WriteString(`M=-M`)
+		buffer.WriteString("M=-M\n")
 	case "eq":
 		c.jump = writeCompare(&buffer, c.jump, "JEQ")
 	case "gt":
@@ -43,13 +43,13 @@ func (c *CodeWriter) WriteArithmetic(command string) {
 		c.jump = writeCompare(&buffer, c.jump, "JLT")
 	case "and":
 		popBinary(&buffer)
-		buffer.WriteString(`M=M&D`)
+		buffer.WriteString("M=M&D\n")
 	case "or":
 		popBinary(&buffer)
-		buffer.WriteString(`M=M|D`)
+		buffer.WriteString("M=M|D\n")
 	case "not":
 		popUnary(&buffer)
-		buffer.WriteString(`M=!M`)
+		buffer.WriteString("M=!M\n")
 	}
 
 	_, err := c.w.Write(buffer.Bytes())
@@ -64,8 +64,8 @@ func (c *CodeWriter) WritePushPop(command CommandType, segment string, index int
 	case "push":
 		switch segment {
 		case "constant":
-			buffer.WriteString(`@` + strconv.Itoa(index))
-			buffer.WriteString(`D=A`)
+			buffer.WriteString("@" + strconv.Itoa(index) + "\n")
+			buffer.WriteString("D=A\n")
 			push(&buffer)
 		case "local":
 		case "argument":
@@ -92,49 +92,49 @@ func (c *CodeWriter) Close() {
 }
 
 func writeFalse(buf *bytes.Buffer) {
-	buf.WriteString(`@SP`)
-	buf.WriteString(`A=M-1`)
-	buf.WriteString(`M=0`)
+	buf.WriteString("@SP\n")
+	buf.WriteString("A=M-1\n")
+	buf.WriteString("M=0\n")
 }
 
 func writeTrue(buf *bytes.Buffer) {
-	buf.WriteString(`@SP`)
-	buf.WriteString(`A=M-1`)
-	buf.WriteString(`M=-1`)
+	buf.WriteString("@SP\n")
+	buf.WriteString("A=M-1\n")
+	buf.WriteString("M=-1\n")
 }
 
 func writeCompare(buffer *bytes.Buffer, jump int, compare string) int {
 	popBinary(buffer)
-	buffer.WriteString(`D=M-D`)
-	buffer.WriteString(`@JUMP_` + strconv.Itoa(jump))
-	buffer.WriteString(`D;` + compare)
+	buffer.WriteString("D=M-D\n")
+	buffer.WriteString("@JUMP_" + strconv.Itoa(jump) + "\n")
+	buffer.WriteString("D;" + compare + "\n")
 	writeFalse(buffer)
-	buffer.WriteString(`@END_` + strconv.Itoa(jump))
-	buffer.WriteString(`0;JMP`)
-	buffer.WriteString(`(JUMP_` + strconv.Itoa(jump) + `)`)
+	buffer.WriteString("@END_" + strconv.Itoa(jump) + "\n")
+	buffer.WriteString("0;JMP")
+	buffer.WriteString("(JUMP_" + strconv.Itoa(jump) + ")\n")
 	writeTrue(buffer)
-	buffer.WriteString(`(END_` + strconv.Itoa(jump) + `)`)
+	buffer.WriteString("(END_" + strconv.Itoa(jump) + ")\n")
 	return jump + 1
 }
 
 // one value in D, one value in M
 func popBinary(buf *bytes.Buffer) {
-	buf.WriteString(`@SP`)
-	buf.WriteString(`AM=M-1`)
-	buf.WriteString(`D=M`)
-	buf.WriteString(`A=A-1`)
+	buf.WriteString("@SP\n")
+	buf.WriteString("AM=M-1\n")
+	buf.WriteString("D=M\n")
+	buf.WriteString("A=A-1\n")
 }
 
 // one value in M
 func popUnary(buf *bytes.Buffer) {
-	buf.WriteString(`@SP`)
-	buf.WriteString(`A=M-1`)
+	buf.WriteString("@SP\n")
+	buf.WriteString("A=M-1\n")
 }
 
 func push(buf *bytes.Buffer) {
-	buf.WriteString(`@SP`)
-	buf.WriteString(`A=M`)
-	buf.WriteString(`M=D`)
-	buf.WriteString(`@SP`)
-	buf.WriteString(`M=M+1`)
+	buf.WriteString("@SP\n")
+	buf.WriteString("A=M\n")
+	buf.WriteString("M=D\n")
+	buf.WriteString("@SP\n")
+	buf.WriteString("M=M+1\n")
 }
