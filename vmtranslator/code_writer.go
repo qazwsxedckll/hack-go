@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strconv"
 )
@@ -61,7 +62,7 @@ func (c *CodeWriter) WriteArithmetic(command string) {
 func (c *CodeWriter) WritePushPop(command CommandType, segment string, index int) {
 	buffer := bytes.Buffer{}
 	switch command {
-	case "push":
+	case C_PUSH:
 		switch segment {
 		case "constant":
 			buffer.WriteString("@" + strconv.Itoa(index) + "\n")
@@ -75,7 +76,9 @@ func (c *CodeWriter) WritePushPop(command CommandType, segment string, index int
 		case "pointer":
 		case "static":
 		}
-	case "pop":
+	case C_POP:
+	default:
+		panic(fmt.Sprintf("unknown command type: %v", command))
 	}
 
 	_, err := c.w.Write(buffer.Bytes())
