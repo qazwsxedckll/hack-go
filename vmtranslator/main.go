@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -14,44 +15,34 @@ func main() {
 	}
 
 	arg := os.Args[1]
-
-	if info, err := os.Stat(arg); err == nil && info.IsDir() {
-		files, err := os.ReadDir(arg)
+	err := filepath.WalkDir(arg, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		for _, file := range files {
-			if strings.HasSuffix(file.Name(), ".vm") {
-				in, err := os.Open(arg + "/" + file.Name())
-				if err != nil {
-					panic(err)
-				}
-				out, err := os.Create(arg + "/" + file.Name()[:len(file.Name())-3] + ".asm")
-				if err != nil {
-					panic(err)
-				}
-				parse(in, out, out.Name())
+		if strings.HasSuffix(path, ".vm") {
+			in, err := os.Open(path)
+			if err != nil {
+				return err
 			}
+			parse(in, path)
 		}
-	} else if strings.HasSuffix(arg, ".vm") {
-		in, err := os.Open(arg)
-		if err != nil {
-			panic(err)
-		}
-		out, err := os.OpenFile(arg[:len(arg)-3]+".asm", os.O_CREATE|os.O_WRONLY, 0o644)
-		if err != nil {
-			panic(err)
-		}
-		parse(in, out, out.Name())
-	} else {
-		panic("Invalid argument. Please provide a .vm file or a directory.")
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
 	}
 }
 
-func parse(in io.Reader, out io.WriteCloser, filename string) {
+func parse(in io.Reader, path string) {
+	out, err := os.Create(path[:len(path)-3] + ".asm")
+	if err != nil {
+		panic(err)
+	}
+
 	codeWriter := NewCodeWriter(out)
-	codeWriter.SetFileNmae(filename)
+	codeWriter.SetFileNmae(strings.TrimSuffix(filepath.Base(path), ".vm"))
 	defer codeWriter.w.Close()
 
 	parser, err := NewParser(in)

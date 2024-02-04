@@ -34,7 +34,7 @@ func (c *CodeWriter) WriteArithmetic(command string) {
 		popBinary(&buffer)
 		buffer.WriteString("M=M-D\n")
 	case "neg":
-		popBinary(&buffer)
+		popUnary(&buffer)
 		buffer.WriteString("M=-M\n")
 	case "eq":
 		c.jump = writeCompare(&buffer, c.jump, "JEQ")
@@ -67,16 +67,80 @@ func (c *CodeWriter) WritePushPop(command CommandType, segment string, index int
 		case "constant":
 			buffer.WriteString("@" + strconv.Itoa(index) + "\n")
 			buffer.WriteString("D=A\n")
-			push(&buffer)
-		case "local":
-		case "argument":
-		case "this":
-		case "that":
-		case "temp":
-		case "pointer":
-		case "static":
+		case "local", "argument", "this", "that":
+			switch segment {
+			case "local":
+				buffer.WriteString("@LCL\n")
+			case "argument":
+				buffer.WriteString("@ARG\n")
+			case "this":
+				buffer.WriteString("@THIS\n")
+			case "that":
+				buffer.WriteString("@THAT\n")
+			}
+			writeOffset(&buffer, index)
+		case "pointer", "temp", "static":
+			switch segment {
+			case "pointer":
+				if index == 0 {
+					buffer.WriteString("@THIS\n")
+				} else if index == 1 {
+					buffer.WriteString("@THAT\n")
+				} else {
+					panic("invalid pointer index")
+				}
+			case "temp":
+				buffer.WriteString("@R" + strconv.Itoa(5+index) + "\n")
+			case "static":
+				buffer.WriteString("@" + c.fileName + "." + strconv.Itoa(index) + "\n")
+			}
+			buffer.WriteString("D=M\n")
 		}
+
+		push(&buffer)
 	case C_POP:
+		switch segment {
+		case "local", "argument", "this", "that":
+			switch segment {
+			case "local":
+				buffer.WriteString("@LCL\n")
+			case "argument":
+				buffer.WriteString("@ARG\n")
+			case "this":
+				buffer.WriteString("@THIS\n")
+			case "that":
+				buffer.WriteString("@THAT\n")
+			}
+
+			buffer.WriteString("D=M\n")
+			buffer.WriteString("@" + strconv.Itoa(index) + "\n")
+			buffer.WriteString("D=D+A\n")
+		case "pointer", "temp", "static":
+			switch segment {
+			case "pointer":
+				if index == 0 {
+					buffer.WriteString("@THIS\n")
+				}
+				if index == 1 {
+					buffer.WriteString("@THAT\n")
+				}
+			case "temp":
+				buffer.WriteString("@R" + strconv.Itoa(5+index) + "\n")
+			case "static":
+				buffer.WriteString("@" + c.fileName + "." + strconv.Itoa(index) + "\n")
+			}
+
+			buffer.WriteString("D=A\n")
+		}
+		buffer.WriteString("@R13\n")
+		buffer.WriteString("M=D\n")
+
+		popUnary(&buffer)
+
+		buffer.WriteString("D=M\n")
+		buffer.WriteString("@R13\n")
+		buffer.WriteString("A=M\n")
+		buffer.WriteString("M=D\n")
 	default:
 		panic(fmt.Sprintf("unknown command type: %v", command))
 	}
@@ -113,11 +177,19 @@ func writeCompare(buffer *bytes.Buffer, jump int, compare string) int {
 	buffer.WriteString("D;" + compare + "\n")
 	writeFalse(buffer)
 	buffer.WriteString("@END_" + strconv.Itoa(jump) + "\n")
-	buffer.WriteString("0;JMP")
+	buffer.WriteString("0;JMP\n")
 	buffer.WriteString("(JUMP_" + strconv.Itoa(jump) + ")\n")
 	writeTrue(buffer)
 	buffer.WriteString("(END_" + strconv.Itoa(jump) + ")\n")
 	return jump + 1
+}
+
+// get value from segment[index] and put it in D
+func writeOffset(buf *bytes.Buffer, index int) {
+	buf.WriteString("D=M\n")
+	buf.WriteString("@" + strconv.Itoa(index) + "\n")
+	buf.WriteString("A=D+A\n")
+	buf.WriteString("D=M\n")
 }
 
 // one value in D, one value in M
@@ -131,7 +203,7 @@ func popBinary(buf *bytes.Buffer) {
 // one value in M
 func popUnary(buf *bytes.Buffer) {
 	buf.WriteString("@SP\n")
-	buf.WriteString("A=M-1\n")
+	buf.WriteString("AM=M-1\n")
 }
 
 func push(buf *bytes.Buffer) {
