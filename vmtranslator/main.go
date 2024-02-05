@@ -58,7 +58,9 @@ func main() {
 					return err
 				}
 				parse(in, codeWriter, path)
-			} else {
+			}
+
+			if d.IsDir() {
 				if codeWriter != nil {
 					codeWriter.Close()
 				}
